@@ -4,48 +4,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bakery Order</title>
+    <title>Bakery Order System</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .spacer {
+            margin-bottom: 4rem;
+        }
+
+        .table-container {
+            margin-top: 4rem;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Welcome to the Bakery</h1>
-    <form action="{{ url_for('order') }}" method="POST">
-        <label for="customer_name">Customer Name:</label>
-        <input type="text" id="customer_name" name="customer_name" required><br><br>
-
-        <table>
-            <tr>
-                <th>Index</th>
-                <th>Product</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Quantity</th>
-            </tr>
-            {% for i, product in enumerate(inventory) %}
-            <tr>
-                <td>{{ i }}</td>
-                <td>{{ product.name }}</td>
-                <td>{{ product.price }}</td>
-                <td>{{ product.stock }}</td>
-                <td>
-                    <input type="number" name="quantity_{{ i }}" min="0" max="{{ product.stock }}" value="0">
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        <br>
-        <button type="submit">Place Order</button>
-    </form>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <ul>
+    <div class="container">
+        <h1 class="my-4">Welcome to the Bakery</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
         {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
+        <div class="alert alert-{{ category }}">{{ message }}</div>
         {% endfor %}
-    </ul>
-    {% endif %}
-    {% endwith %}
+        {% endif %}
+        {% endwith %}
+        <nav>
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#order">Order</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#database">Database</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="tab-content">
+            <section id="order" class="tab-pane fade show active">
+                <form action="{{ url_for('order') }}" method="POST">
+                    <div class="form-group">
+                        <label for="customer_name">Customer Name:</label>
+                        <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+                    </div>
+                    <h3>Available Bakery Items</h3>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for index, product in enumerate(inventory) %}
+                            <tr>
+                                <td>{{ index + 1 }}</td>
+                                <td>{{ product.name }}</td>
+                                <td>${{ product.price }}</td>
+                                <td>{{ product.stock }}</td>
+                                <td><input type="number" class="form-control" name="quantity_{{ index }}" min="0"
+                                        max="{{ product.stock }}" value="0"></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <button type="submit" class="btn btn-primary">Place Order</button>
+                </form>
+            </section>
+
+            <div class="spacer"></div>
+
+            <section id="database" class="tab-pane fade">
+                <h3>Customer Orders</h3>
+                <div class="table-container">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Customer Name</th>
+                                <th>Order Items</th>
+                                <th>Total Amount</th>
+                                <th>Order Date</th>
+                                <th>Order Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for index, order in enumerate(orders) %}
+                            <tr>
+                                <td>{{ index + 1 }}</td>
+                                <td>{{ order.customer_name }}</td>
+                                <td>
+                                    <ul>
+                                        {% for item, quantity in order.order.items() %}
+                                        <li>{{ item }}: {{ quantity }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                                <td>${{ order.total }}</td>
+                                <td>{{ order.timestamp.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ order.timestamp.strftime('%H:%M:%S') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 
 </html>
