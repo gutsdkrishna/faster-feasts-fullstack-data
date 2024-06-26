@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bakery Order</title>
+</head>
+
+<body>
+    <h1>Welcome to the Bakery</h1>
+    <form action="{{ url_for('order') }}" method="POST">
+        <label for="customer_name">Customer Name:</label>
+        <input type="text" id="customer_name" name="customer_name" required><br><br>
+
+        <table>
+            <tr>
+                <th>Index</th>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Quantity</th>
+            </tr>
+            {% for i, product in enumerate(inventory) %}
+            <tr>
+                <td>{{ i }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.price }}</td>
+                <td>{{ product.stock }}</td>
+                <td>
+                    <input type="number" name="quantity_{{ i }}" min="0" max="{{ product.stock }}" value="0">
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <br>
+        <button type="submit">Place Order</button>
+    </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul>
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+</body>
+
+</html>
