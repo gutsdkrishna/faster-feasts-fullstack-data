@@ -7,19 +7,18 @@ from bson.binary import Binary
 from bson import ObjectId
 import base64
 import certifi
-from dotenv import load_dotenv
 import os
 
-load_dotenv()  # Load environment variables from .env file
-
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")  # For flash messages
+app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")  # For flash messages
 
-# Establish MongoDB connection
-client = MongoClient(os.getenv("MONGO_URI"), tls=True, tlsCAFile=certifi.where())
-db = client['bakery']  # Database name
-orders_collection = db['orders']  # Collection name
-products_collection = db['products']  # Collection for products
+try:
+    client = MongoClient(os.environ.get("MONGO_URI"), tls=True, tlsCAFile=certifi.where())
+    db = client['bakery']  # Database name
+    orders_collection = db['orders']  # Collection name
+    products_collection = db['products']  # Collection for products
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
 
 # Ensure the products are stored in the database
 def initialize_products():
