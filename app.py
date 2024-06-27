@@ -50,15 +50,26 @@ class Product:
 initialize_products()
 
 # Function to generate QR code
-def generate_qr(data):
+# Function to generate QR code
+def generate_qr(order_summary):
+    summary_text = f"Customer: {order_summary['customer_name']}\n" \
+                   f"Date & Time: {order_summary['timestamp']}\n" \
+                   f"Order:\n"
+    
+    for product, quantity in order_summary['order'].items():
+        summary_text += f"  - {product}: {quantity}\n"
+
+    summary_text += f"Total: {order_summary['total']}"
+
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(data)
+    qr.add_data(summary_text)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
     img_bytes = io.BytesIO()
     img.save(img_bytes, format='PNG')
     img_bytes.seek(0)
     return img_bytes.read()
+
 
 @app.context_processor
 def utility_processor():
@@ -96,7 +107,14 @@ def order():
         return redirect(url_for('index'))
 
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    order_summary = f"Customer: {customer_name}\nDate & Time: {current_time}\nOrder: {order_items}\nTotal: {total_amount}"
+    order_summary = {
+        "customer_name": customer_name,
+        "timestamp": current_time,
+        "order": order_items,
+        "total": total_amount
+    }
+
+    # Generate QR code
     qr_img_bytes = generate_qr(order_summary)
 
     # Save order and QR code in MongoDB
@@ -111,6 +129,7 @@ def order():
 
     flash('Order placed successfully', 'success')
     return redirect(url_for('confirmation', order_id=str(order_data['_id'])))
+
 
 @app.route('/confirmation/<order_id>')
 def confirmation(order_id):
