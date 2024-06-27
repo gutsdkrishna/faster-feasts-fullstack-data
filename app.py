@@ -8,15 +8,21 @@ from bson import ObjectId
 import base64
 import certifi
 import os
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")  # For flash messages
 
 try:
-    client = MongoClient(os.environ.get("MONGO_URI"), tls=True, tlsCAFile=certifi.where())
+    mongo_uri = os.environ.get("MONGO_URI")
+    print(f"Mongo URI: {mongo_uri}")
+    client = MongoClient(mongo_uri, tls=True, tlsCAFile=certifi.where())
     db = client['bakery']  # Database name
     orders_collection = db['orders']  # Collection name
     products_collection = db['products']  # Collection for products
+    print("Connected to MongoDB!")
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
 
