@@ -139,11 +139,25 @@ def generate_qr(data, filename):
     img.save(f"static/qr_codes/{filename}.png")
     print(f"QR code saved to static/qr_codes/{filename}.png")
 
-@app.route('/update_stock', methods=['POST'])
+@app.route('/admin/update_stock', methods=['POST'])
 def update_stock():
-    # Update stock logic here
-    return redirect(url_for('admin_dashboard'))
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
 
+    product_name = request.form.get('product_name')
+    new_stock = int(request.form.get('new_stock'))
+
+    # Retrieve current stock
+    current_stock = products_collection.find_one({'name': product_name})['stock']
+
+    # Update stock by adding previous stock with new stock
+    total_stock = current_stock + new_stock
+
+    # Update the database
+    products_collection.update_one({'name': product_name}, {'$set': {'stock': total_stock}})
+
+    flash(f'Stock for {product_name} updated successfully', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
