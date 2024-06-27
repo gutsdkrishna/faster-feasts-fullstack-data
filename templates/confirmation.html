@@ -3,39 +3,29 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Confirmation</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <body>
-    <header>
-        <div class="container">
-            <h1>Kalki Bakery</h1>
-            <nav>
-                <ul>
-                    <li><a href="/">Home</a></li>
-                </ul>
-            </nav>
+    <div class="container">
+        <div>
+            <h1>Order Placed Successfully!</h1>
+            <p>Your order has been placed successfully. Please scan the QR code for your order details.</p>
+            {% if qr_img_src %}
+            <img src="{{ qr_img_src }}" alt="QR Code">
+            {% else %}
+            <p>No QR code available</p>
+            {% endif %}
+            <p><a href="/">Place another order</a></p>
         </div>
-    </header>
+    </div>
 
-    <main>
-        <section id="confirmation">
-            <div class="container">
-                <h2>Order Confirmation</h2>
-                <p>Your order has been placed successfully!</p>
-                <p>Thank you for shopping with us!</p>
-                <a href="/">Place another order</a>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 Kalki Bakery. All rights reserved.</p>
-        </div>
-    </footer>
+    <!-- Bootstrap JS and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 
 </html>

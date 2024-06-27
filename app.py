@@ -2,7 +2,11 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from pymongo import MongoClient
 import datetime
 import qrcode
+import io
 import os
+from bson.binary import Binary
+from bson import ObjectId
+import base64
 import certifi
 
 app = Flask(__name__)
@@ -45,6 +49,17 @@ class Product:
 # Initialize products in the database
 initialize_products()
 
+# Function to generate QR code
+def generate_qr(data):
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    return img_bytes.read()
+
 @app.context_processor
 def utility_processor():
     return dict(enumerate=enumerate)
@@ -53,11 +68,11 @@ def utility_processor():
 def index():
     inventory = [Product(p['name'], p['price'], p['stock']) for p in products_collection.find()]
     orders = list(orders_collection.find())
-    
+
     # Convert the timestamp from string to datetime object
     for order in orders:
         order['timestamp'] = datetime.datetime.strptime(order['timestamp'], "%Y-%m-%d_%H-%M-%S")
-    
+
     return render_template('index.html', inventory=inventory, orders=orders)
 
 @app.route('/order', methods=['POST'])
@@ -81,23 +96,36 @@ def order():
         return redirect(url_for('index'))
 
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    order_summary = f"Customer: {customer_name}\nDate & Time: {current_time}\nOrder: {order_items}\nTotal: {total_amount}"
+    qr_img_bytes = generate_qr(order_summary)
+
+    # Save order and QR code in MongoDB
     order_data = {
         "customer_name": customer_name,
         "order": order_items,
         "total": total_amount,
-        "timestamp": current_time
+        "timestamp": current_time,
+        "qr_code": Binary(qr_img_bytes)
     }
     orders_collection.insert_one(order_data)
 
-    order_summary = f"Customer: {customer_name}\nDate & Time: {current_time}\nOrder: {order_items}\nTotal: {total_amount}"
-    generate_qr(order_summary, f"{customer_name}_{current_time}")
-
     flash('Order placed successfully', 'success')
-    return redirect(url_for('confirmation'))
+    return redirect(url_for('confirmation', order_id=str(order_data['_id'])))
 
-@app.route('/confirmation')
-def confirmation():
-    return render_template('confirmation.html')
+@app.route('/confirmation/<order_id>')
+def confirmation(order_id):
+    order = orders_collection.find_one({"_id": ObjectId(order_id)})
+    if order:
+        qr_img_bytes = order.get('qr_code', None)
+        if qr_img_bytes:
+            qr_img_src = f"data:image/png;base64,{base64.b64encode(qr_img_bytes).decode('utf-8')}"
+        else:
+            qr_img_src = None
+        return render_template('confirmation.html', qr_img_src=qr_img_src)
+    else:
+        flash('Order not found', 'error')
+        return redirect(url_for('index'))
+
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
@@ -128,16 +156,7 @@ def admin_dashboard():
     
     return render_template('admin_dashboard.html', inventory=inventory)
 
-def generate_qr(data, filename):
-    filename = filename.replace(" ", "_").strip("_")
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    if not os.path.exists("static/qr_codes"):
-        os.makedirs("static/qr_codes")
-    img.save(f"static/qr_codes/{filename}.png")
-    print(f"QR code saved to static/qr_codes/{filename}.png")
+
 
 @app.route('/admin/update_stock', methods=['POST'])
 def update_stock():
