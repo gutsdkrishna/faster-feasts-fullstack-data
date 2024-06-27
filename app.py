@@ -3,7 +3,6 @@ from pymongo import MongoClient
 import datetime
 import qrcode
 import io
-import os
 from bson.binary import Binary
 from bson import ObjectId
 import base64
@@ -51,30 +50,15 @@ initialize_products()
 
 # Function to generate QR code
 # Function to generate QR code
-def generate_qr(order_summary):
-    summary_text = f"Customer: {order_summary['customer_name']}\n" \
-                   f"Date & Time: {order_summary['timestamp']}\n" \
-                   f"Order:\n"
-    
-    for product, quantity in order_summary['order'].items():
-        summary_text += f"  - {product}: {quantity}\n"
-
-    summary_text += f"Total: {order_summary['total']}"
-
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(summary_text)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    img_bytes = io.BytesIO()
-    img.save(img_bytes, format='PNG')
-    img_bytes.seek(0)
-    return img_bytes.read()
 
 
+
+# Context processor for utility functions
 @app.context_processor
 def utility_processor():
     return dict(enumerate=enumerate)
 
+# Route for home page
 @app.route('/')
 def index():
     inventory = [Product(p['name'], p['price'], p['stock']) for p in products_collection.find()]
@@ -86,6 +70,7 @@ def index():
 
     return render_template('index.html', inventory=inventory, orders=orders)
 
+# Route for placing an order
 @app.route('/order', methods=['POST'])
 def order():
     customer_name = request.form.get('customer_name')
@@ -108,6 +93,7 @@ def order():
 
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     order_summary = {
+        "_id": ObjectId(),  # Generate new ObjectId for the order
         "customer_name": customer_name,
         "timestamp": current_time,
         "order": order_items,
@@ -119,6 +105,7 @@ def order():
 
     # Save order and QR code in MongoDB
     order_data = {
+        "_id": order_summary["_id"],  # Assign the same ObjectId to order_data
         "customer_name": customer_name,
         "order": order_items,
         "total": total_amount,
@@ -128,24 +115,77 @@ def order():
     orders_collection.insert_one(order_data)
 
     flash('Order placed successfully', 'success')
-    return redirect(url_for('confirmation', order_id=str(order_data['_id'])))
-
+    return redirect(url_for('confirmation', order_id=str(order_summary['_id'])))  # Pass order_id as parameter
 
 @app.route('/confirmation/<order_id>')
 def confirmation(order_id):
-    order = orders_collection.find_one({"_id": ObjectId(order_id)})
-    if order:
-        qr_img_bytes = order.get('qr_code', None)
-        if qr_img_bytes:
-            qr_img_src = f"data:image/png;base64,{base64.b64encode(qr_img_bytes).decode('utf-8')}"
-        else:
-            qr_img_src = None
-        return render_template('confirmation.html', qr_img_src=qr_img_src)
+    order_data = orders_collection.find_one({'_id': ObjectId(order_id)})
+    if order_data:
+        # Generate Base64 encoded QR code
+        order_data['qr_code'] = generate_qr(order_data)
+        
+        # Process order_data and display confirmation page
+        return render_template('confirmation.html', order=order_data)
     else:
         flash('Order not found', 'error')
         return redirect(url_for('index'))
 
 
+
+
+import qrcode
+import io
+import base64
+
+def generate_qr(order_summary):
+    receipt_link = f"http://yourdomain.com/receipt/{str(order_summary['_id'])}"  # Replace with your actual domain
+    
+    summary_text = f"Customer: {order_summary['customer_name']}\n" \
+                   f"Date & Time: {order_summary['timestamp']}\n" \
+                   f"Order:\n"
+
+    for product, quantity in order_summary['order'].items():
+        summary_text += f"  - {product}: {quantity}\n"
+
+    summary_text += f"Total: {order_summary['total']}\n" \
+                   f"Receipt: {receipt_link}"  # Include the receipt link in the QR code content
+
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(summary_text)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    # Convert image bytes to Base64 string
+    img_base64 = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
+    
+    return img_base64
+
+
+
+
+
+
+# Route for displaying receipt after placing an order
+@app.route('/receipt/<order_id>')
+def receipt(order_id):
+    order_data = orders_collection.find_one({'_id': ObjectId(order_id)})
+    if not order_data:
+        flash('Order not found', 'error')
+        return redirect(url_for('index'))
+
+    order_summary = {
+        "customer_name": order_data['customer_name'],
+        "timestamp": order_data['timestamp'],
+        "order": order_data['order'],
+        "total": order_data['total']
+    }
+
+    return render_template('receipt.html', order=order_summary)
+
+# Route for admin login
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -159,6 +199,7 @@ def admin_login():
     else:
         return render_template('admin.html')
 
+# Route for admin dashboard
 @app.route('/admin/dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
     if not session.get('admin_logged_in'):

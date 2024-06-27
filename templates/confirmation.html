@@ -1,31 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
     <title>Order Confirmation</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <body>
-    <div class="container">
-        <div>
-            <h1>Order Placed Successfully!</h1>
-            <p>Your order has been placed successfully. Please scan the QR code for your order details.</p>
-            {% if qr_img_src %}
-            <img src="{{ qr_img_src }}" alt="QR Code">
-            {% else %}
-            <p>No QR code available</p>
-            {% endif %}
-            <p><a href="/">Place another order</a></p>
-        </div>
-    </div>
+    <h1>Order Confirmation</h1>
+    <p>Customer Name: {{ order.customer_name }}</p>
+    <p>Order Timestamp: {{ order.timestamp }}</p>
+    <p>Order Details:</p>
+    <ul>
+        {% for product, quantity in order.order.items() %}
+        <li>{{ product }} - Quantity: {{ quantity }}</li>
+        {% endfor %}
+    </ul>
+    <p>Total Amount: ${{ order.total }}</p>
 
-    <!-- Bootstrap JS and jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    {% if order.qr_code %}
+    <img src="data:image/png;base64,{{ order.qr_code }}" alt="QR Code">
+    {% else %}
+    <p>No QR code available</p>
+    {% endif %}
 </body>
 
 </html>
