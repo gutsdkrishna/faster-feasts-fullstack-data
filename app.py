@@ -14,6 +14,26 @@ client = MongoClient("mongodb+srv://randi:KboUc2P0KVAoOptx@kalki.ow7yktj.mongodb
                      tlsCAFile=certifi.where())
 db = client['bakery']  # Database name
 orders_collection = db['orders']  # Collection name
+products_collection = db['products']  # Collection for products
+
+# Ensure the products are stored in the database
+def initialize_products():
+    sample_inventory = [
+        {"name": "Bread", "price": 2.50, "stock": 10},
+        {"name": "Cupcakes", "price": 1.00, "stock": 15},
+        {"name": "Cookies", "price": 3.00, "stock": 8},
+        {"name": "Croissant", "price": 2.00, "stock": 12},
+        {"name": "Donuts", "price": 1.50, "stock": 20},
+        {"name": "Muffins", "price": 1.20, "stock": 10},
+        {"name": "Bagels", "price": 1.00, "stock": 15},
+        {"name": "Brownies", "price": 2.50, "stock": 10},
+        {"name": "Pies", "price": 5.00, "stock": 5},
+        {"name": "Cakes", "price": 15.00, "stock": 3}
+    ]
+
+    for product in sample_inventory:
+        if not products_collection.find_one({"name": product['name']}):
+            products_collection.insert_one(product)
 
 # Product class
 class Product:
@@ -22,19 +42,8 @@ class Product:
         self.price = price
         self.stock = stock
 
-# Sample inventory
-inventory = [
-    Product("Bread", 2.50, 10),
-    Product("Cupcakes", 1.00, 15),
-    Product("Cookies", 3.00, 8),
-    Product("Croissant", 2.00, 12),
-    Product("Donuts", 1.50, 20),
-    Product("Muffins", 1.20, 10),
-    Product("Bagels", 1.00, 15),
-    Product("Brownies", 2.50, 10),
-    Product("Pies", 5.00, 5),
-    Product("Cakes", 15.00, 3)
-]
+# Initialize products in the database
+initialize_products()
 
 @app.context_processor
 def utility_processor():
@@ -42,7 +51,14 @@ def utility_processor():
 
 @app.route('/')
 def index():
-    return render_template('index.html', inventory=inventory)
+    inventory = [Product(p['name'], p['price'], p['stock']) for p in products_collection.find()]
+    orders = list(orders_collection.find())
+    
+    # Convert the timestamp from string to datetime object
+    for order in orders:
+        order['timestamp'] = datetime.datetime.strptime(order['timestamp'], "%Y-%m-%d_%H-%M-%S")
+    
+    return render_template('index.html', inventory=inventory, orders=orders)
 
 @app.route('/order', methods=['POST'])
 def order():
@@ -50,15 +66,15 @@ def order():
     order_items = {}
     total_amount = 0
 
-    for i, product in enumerate(inventory):
+    for i, product in enumerate(products_collection.find()):
         quantity = int(request.form.get(f'quantity_{i}', 0))
         if quantity > 0:
-            if quantity <= product.stock:
-                product.stock -= quantity
-                order_items[product.name] = quantity
-                total_amount += product.price * quantity
+            if quantity <= product['stock']:
+                products_collection.update_one({'name': product['name']}, {'$inc': {'stock': -quantity}})
+                order_items[product['name']] = quantity
+                total_amount += product['price'] * quantity
             else:
-                flash(f'Insufficient stock for {product.name}. Available stock: {product.stock}', 'error')
+                flash(f'Insufficient stock for {product["name"]}. Available stock: {product["stock"]}', 'error')
 
     if not order_items:
         flash('No items ordered', 'error')
