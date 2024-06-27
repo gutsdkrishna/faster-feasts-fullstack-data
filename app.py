@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from pymongo import MongoClient
 import datetime
 import qrcode
@@ -99,6 +99,35 @@ def order():
 def confirmation():
     return render_template('confirmation.html')
 
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == 'adminpassword':  # Replace with a more secure password or use environment variables
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Incorrect password', 'error')
+            return redirect(url_for('index'))
+    else:
+        return render_template('admin.html')
+
+@app.route('/admin/dashboard', methods=['GET', 'POST'])
+def admin_dashboard():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    
+    inventory = [Product(p['name'], p['price'], p['stock']) for p in products_collection.find()]
+    
+    if request.method == 'POST':
+        product_name = request.form.get('product_name')
+        new_stock = int(request.form.get('new_stock'))
+        products_collection.update_one({'name': product_name}, {'$set': {'stock': new_stock}})
+        flash(f'Stock for {product_name} updated successfully', 'success')
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('admin_dashboard.html', inventory=inventory)
+
 def generate_qr(data, filename):
     filename = filename.replace(" ", "_").strip("_")
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
@@ -109,6 +138,12 @@ def generate_qr(data, filename):
         os.makedirs("static/qr_codes")
     img.save(f"static/qr_codes/{filename}.png")
     print(f"QR code saved to static/qr_codes/{filename}.png")
+
+@app.route('/update_stock', methods=['POST'])
+def update_stock():
+    # Update stock logic here
+    return redirect(url_for('admin_dashboard'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
