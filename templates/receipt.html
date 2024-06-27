@@ -1,5 +1,3 @@
-<!-- receipt.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -59,13 +57,13 @@
             <p><strong>Total:</strong> ${{ order.total }}</p>
         </div>
 
-        <div class="qr-code">
+        <!-- <div class="qr-code">
             {% if qr_img_src %}
-            <img src="{{ qr_img_src }}" alt="QR Code">
+            <img src="data:image/png;base64,{{ qr_img_src }}" alt="QR Code">
             {% else %}
             <p>QR Code not available</p>
             {% endif %}
-        </div>
+        </div> -->
     </div>
 </body>
 

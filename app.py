@@ -72,6 +72,7 @@ def index():
 
 # Route for placing an order
 @app.route('/order', methods=['POST'])
+@app.route('/order', methods=['POST'])
 def order():
     customer_name = request.form.get('customer_name')
     order_items = {}
@@ -101,7 +102,7 @@ def order():
     }
 
     # Generate QR code
-    qr_img_bytes = generate_qr(order_summary)
+    qr_img_src = generate_qr(order_summary)
 
     # Save order and QR code in MongoDB
     order_data = {
@@ -110,22 +111,20 @@ def order():
         "order": order_items,
         "total": total_amount,
         "timestamp": current_time,
-        "qr_code": Binary(qr_img_bytes)
+        "qr_code": qr_img_src
     }
     orders_collection.insert_one(order_data)
 
     flash('Order placed successfully', 'success')
-    return redirect(url_for('confirmation', order_id=str(order_summary['_id'])))  # Pass order_id as parameter
+    return redirect(url_for('confirmation', order_id=str(order_summary['_id']), qr_img_src=qr_img_src))  # Pass order_id and qr_img_src as parameters
 
 @app.route('/confirmation/<order_id>')
 def confirmation(order_id):
     order_data = orders_collection.find_one({'_id': ObjectId(order_id)})
     if order_data:
-        # Generate Base64 encoded QR code
-        order_data['qr_code'] = generate_qr(order_data)
-        
         # Process order_data and display confirmation page
-        return render_template('confirmation.html', order=order_data)
+        qr_img_src = order_data.get('qr_code')
+        return render_template('confirmation.html', order=order_data, qr_img_src=qr_img_src)
     else:
         flash('Order not found', 'error')
         return redirect(url_for('index'))
@@ -137,23 +136,18 @@ import qrcode
 import io
 import base64
 
+import qrcode
+import io
+import base64
+
 def generate_qr(order_summary):
-    receipt_link = f"http://yourdomain.com/receipt/{str(order_summary['_id'])}"  # Replace with your actual domain
+    receipt_link = f"http://localhost:5000/receipt/{str(order_summary['_id'])}"  # Assuming Flask runs on localhost:5000
     
-    summary_text = f"Customer: {order_summary['customer_name']}\n" \
-                   f"Date & Time: {order_summary['timestamp']}\n" \
-                   f"Order:\n"
-
-    for product, quantity in order_summary['order'].items():
-        summary_text += f"  - {product}: {quantity}\n"
-
-    summary_text += f"Total: {order_summary['total']}\n" \
-                   f"Receipt: {receipt_link}"  # Include the receipt link in the QR code content
-
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(summary_text)
+    qr.add_data(receipt_link)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
+    
     img_bytes = io.BytesIO()
     img.save(img_bytes, format='PNG')
     img_bytes.seek(0)
@@ -162,6 +156,8 @@ def generate_qr(order_summary):
     img_base64 = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
     
     return img_base64
+
+
 
 
 

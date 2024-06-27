@@ -1,27 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+
+        .confirmation-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .confirmation-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .order-details {
+            margin-bottom: 20px;
+        }
+
+        .qr-code {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Order Confirmation</h1>
-    <p>Customer Name: {{ order.customer_name }}</p>
-    <p>Order Timestamp: {{ order.timestamp }}</p>
-    <p>Order Details:</p>
-    <ul>
-        {% for product, quantity in order.order.items() %}
-        <li>{{ product }} - Quantity: {{ quantity }}</li>
-        {% endfor %}
-    </ul>
-    <p>Total Amount: ${{ order.total }}</p>
+    <div class="confirmation-container">
+        <div class="confirmation-header">
+            <h2>Order Confirmation</h2>
+        </div>
 
-    {% if order.qr_code %}
-    <img src="data:image/png;base64,{{ order.qr_code }}" alt="QR Code">
-    {% else %}
-    <p>No QR code available</p>
-    {% endif %}
+        <div class="order-details">
+            <p><strong>Customer:</strong> {{ order.customer_name }}</p>
+            <p><strong>Date & Time:</strong> {{ order.timestamp }}</p>
+            <p><strong>Order:</strong></p>
+            <ul>
+                {% for product, quantity in order.order.items() %}
+                <li>{{ product }}: {{ quantity }}</li>
+                {% endfor %}
+            </ul>
+            <p><strong>Total:</strong> ${{ order.total }}</p>
+        </div>
+
+        <div class="qr-code">
+            {% if qr_img_src %}
+            <img src="data:image/png;base64,{{ qr_img_src }}" alt="QR Code">
+            {% else %}
+            <p>QR Code not available</p>
+            {% endif %}
+        </div>
+    </div>
 </body>
 
 </html>
