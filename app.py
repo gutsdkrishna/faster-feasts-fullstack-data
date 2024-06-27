@@ -7,14 +7,16 @@ from bson.binary import Binary
 from bson import ObjectId
 import base64
 import certifi
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # For flash messages
+app.secret_key = os.getenv("SECRET_KEY")  # For flash messages
 
 # Establish MongoDB connection
-client = MongoClient("mongodb+srv://randi:KboUc2P0KVAoOptx@kalki.ow7yktj.mongodb.net/bakery?retryWrites=true&w=majority",
-                     tls=True,
-                     tlsCAFile=certifi.where())
+client = MongoClient(os.getenv("MONGO_URI"), tls=True, tlsCAFile=certifi.where())
 db = client['bakery']  # Database name
 orders_collection = db['orders']  # Collection name
 products_collection = db['products']  # Collection for products
@@ -49,9 +51,22 @@ class Product:
 initialize_products()
 
 # Function to generate QR code
-# Function to generate QR code
-
-
+def generate_qr(order_summary):
+    receipt_link = f"http://localhost:5000/receipt/{str(order_summary['_id'])}"  # Assuming Flask runs on localhost:5000
+    
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(receipt_link)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    # Convert image bytes to Base64 string
+    img_base64 = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
+    
+    return img_base64
 
 # Context processor for utility functions
 @app.context_processor
@@ -71,7 +86,6 @@ def index():
     return render_template('index.html', inventory=inventory, orders=orders)
 
 # Route for placing an order
-@app.route('/order', methods=['POST'])
 @app.route('/order', methods=['POST'])
 def order():
     customer_name = request.form.get('customer_name')
@@ -129,41 +143,6 @@ def confirmation(order_id):
         flash('Order not found', 'error')
         return redirect(url_for('index'))
 
-
-
-
-import qrcode
-import io
-import base64
-
-import qrcode
-import io
-import base64
-
-def generate_qr(order_summary):
-    receipt_link = f"http://localhost:5000/receipt/{str(order_summary['_id'])}"  # Assuming Flask runs on localhost:5000
-    
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(receipt_link)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    img_bytes = io.BytesIO()
-    img.save(img_bytes, format='PNG')
-    img_bytes.seek(0)
-    
-    # Convert image bytes to Base64 string
-    img_base64 = base64.b64encode(img_bytes.getvalue()).decode('utf-8')
-    
-    return img_base64
-
-
-
-
-
-
-
-
 # Route for displaying receipt after placing an order
 @app.route('/receipt/<order_id>')
 def receipt(order_id):
@@ -211,8 +190,6 @@ def admin_dashboard():
         return redirect(url_for('admin_dashboard'))
     
     return render_template('admin_dashboard.html', inventory=inventory)
-
-
 
 @app.route('/admin/update_stock', methods=['POST'])
 def update_stock():
