@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+</head>
+
+<body>
+    <h1>Admin Dashboard</h1>
+    <form action="{{ url_for('update_stock') }}" method="post">
+        <label for="product_name">Product Name:</label>
+        <select id="product_name" name="product_name">
+            {% for product in inventory %}
+            <option value="{{ product.name }}">{{ product.name }}</option>
+            {% endfor %}
+        </select>
+        <label for="new_stock">New Stock:</label>
+        <input type="number" id="new_stock" name="new_stock" min="0">
+        <button type="submit">Update</button>
+    </form>
+</body>
+
+</html>

@@ -4,8 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Confirmation</title>
+    <title>Order Receipt</title>
     <style>
+        /* Add your custom styles for the receipt here */
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
@@ -13,7 +14,7 @@
             padding: 20px;
         }
 
-        .confirmation-container {
+        .receipt-container {
             max-width: 600px;
             margin: 0 auto;
             background-color: #fff;
@@ -22,7 +23,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        .confirmation-header {
+        .receipt-header {
             text-align: center;
             margin-bottom: 20px;
         }
@@ -39,9 +40,9 @@
 </head>
 
 <body>
-    <div class="confirmation-container">
-        <div class="confirmation-header">
-            <h2>Order Confirmation</h2>
+    <div class="receipt-container">
+        <div class="receipt-header">
+            <h2>Order Receipt</h2>
         </div>
 
         <div class="order-details">
@@ -56,13 +57,13 @@
             <p><strong>Total:</strong> ${{ order.total }}</p>
         </div>
 
-        <div class="qr-code">
+        <!-- <div class="qr-code">
             {% if qr_img_src %}
             <img src="data:image/png;base64,{{ qr_img_src }}" alt="QR Code">
             {% else %}
             <p>QR Code not available</p>
             {% endif %}
-        </div>
+        </div> -->
     </div>
 </body>
 

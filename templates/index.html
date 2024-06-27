@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
+    <title>Bakery Management System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bakery Order System</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .spacer {
@@ -20,13 +20,26 @@
 <body>
     <div class="container">
         <h1 class="my-4">Welcome to the Bakery</h1>
+
+        <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
+        <div class="row">
+            <div class="col-md-12">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
         {% endif %}
         {% endwith %}
+
+        <!-- Navigation -->
         <nav>
             <ul class="nav nav-tabs">
                 <li class="nav-item">
@@ -35,10 +48,15 @@
                 <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#database">Database</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin">Admin</a> <!-- Admin link -->
+                </li>
             </ul>
         </nav>
 
+        <!-- Tab content -->
         <div class="tab-content">
+            <!-- Order section -->
             <section id="order" class="tab-pane fade show active">
                 <form action="{{ url_for('order') }}" method="POST">
                     <div class="form-group">
@@ -73,8 +91,7 @@
                 </form>
             </section>
 
-            <div class="spacer"></div>
-
+            <!-- Database section -->
             <section id="database" class="tab-pane fade">
                 <h3>Customer Orders</h3>
                 <div class="table-container">
@@ -113,6 +130,7 @@
         </div>
     </div>
 
+    <!-- Bootstrap JS and jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
