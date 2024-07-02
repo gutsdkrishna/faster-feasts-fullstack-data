@@ -98,7 +98,13 @@ def order():
     total_amount = 0
 
     for i, product in enumerate(products_collection.find()):
-        quantity = int(request.form.get(f'quantity_{i}', 0))
+        quantity_str = request.form.get(f'quantity_{i}', '0')
+        
+        try:
+            quantity = int(quantity_str)
+        except ValueError:
+            quantity = 0
+
         if quantity > 0:
             if quantity <= product['stock']:
                 products_collection.update_one({'name': product['name']}, {'$inc': {'stock': -quantity}})
